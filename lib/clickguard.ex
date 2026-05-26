@@ -8,7 +8,7 @@ defmodule Clickguard do
   interface.
   """
 
-  alias Clickguard.{Event, Parser}
+  alias Clickguard.{Detector, Event, Parser}
 
   @type opts :: [
           parser: module()
@@ -31,6 +31,7 @@ defmodule Clickguard do
   @spec run(Path.t(), opts()) :: {:ok, [Event.t()]} | {:error, term()}
   def run(path, opts \\ []) do
     parser = Keyword.get(opts, :parser, Parser.CLF)
+    detectors = [Detector.FreqIp]
 
     case File.exists?(path) do
       false ->
@@ -47,7 +48,15 @@ defmodule Clickguard do
           |> Stream.map(fn {:ok, event} -> event end)
           |> Enum.to_list()
 
-        {:ok, events}
+        findings =
+          detectors
+          |> Task.async_stream(fn det -> det.detect(events, opts) end,
+            ordered: false,
+            timeout: :timer.minutes(5)
+          )
+          |> Enum.flat_map(fn {:ok, fs} -> fs end)
+
+        {:ok, findings}
     end
   end
 end
