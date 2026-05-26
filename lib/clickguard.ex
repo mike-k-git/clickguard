@@ -1,62 +1,58 @@
 defmodule Clickguard do
   @moduledoc """
-  Reads a log stream, parses each line into a `Clickguard.Event`, runs
-  every enabled detector over the resulting event set, and emits a
-  `Clickguard.Report` containing the findings.
+  Reads a log file, parses each line into a `Clickguard.Event`, and runs
+  the configured detectors over the resulting event list.
 
-  Top-Level API is `run/2`; see `Clickguard.CLI` for the command-line
-  interface.
+  Top-Level API is `run/2`.
   """
 
-  alias Clickguard.{Detector, Event, Parser}
+  alias Clickguard.{Finding, Parser}
 
   @type opts :: [
-          parser: module()
+          parser: module(),
+          detectors: [module()]
         ]
+
+  @doc """
+  Parse input into events.
+  """
+  def parse(input, opts \\ []) do
+    parser = Keyword.get(opts, :parser, Parser.CLF)
+
+    events =
+      input
+      |> Stream.map(&String.trim_trailing/1)
+      |> Stream.reject(&(&1 == ""))
+      |> Stream.map(&parser.parse/1)
+      |> Stream.filter(&match?({:ok, _}, &1))
+      |> Stream.map(fn {:ok, event} -> event end)
+      |> Enum.to_list()
+
+    {:ok, events}
+  end
+
+  @doc """
+  Run detectors over events.
+  """
+  def detect(events, opts \\ []) do
+    detectors = Keyword.get(opts, :detectors, Application.get_env(:clickguard, :detectors, []))
+
+    detectors
+    |> Task.async_stream(fn det -> det.detect(events, opts) end,
+      ordered: false,
+      timeout: :timer.minutes(5)
+    )
+    |> Enum.flat_map(fn {:ok, fs} -> fs end)
+  end
 
   @doc """
   Run the full pipeline against a log file at `path`.
 
-  For the v0.1 milestone this just parses every line and returns a list of
-  events. Detection and reporting wire in once those modules exist.
-
-  ## Examples
-
-    iex> path = "test/fixtures/sample_clf.log"
-    iex> {:ok, events} = Clickguard.run(path)
-    iex> is_list(events)
-    iex> :ok
-    :ok
+  Parse a log, run detectors, and emit a list of findings.
   """
-  @spec run(Path.t(), opts()) :: {:ok, [Event.t()]} | {:error, term()}
+  @spec run(Path.t(), opts()) :: {:ok, [Finding.t()]} | {:error, term()}
   def run(path, opts \\ []) do
-    parser = Keyword.get(opts, :parser, Parser.CLF)
-    detectors = [Detector.FreqIp]
-
-    case File.exists?(path) do
-      false ->
-        {:error, {:not_found, path}}
-
-      true ->
-        events =
-          path
-          |> File.stream!()
-          |> Stream.map(&String.trim_trailing/1)
-          |> Stream.reject(&(&1 == ""))
-          |> Stream.map(&parser.parse/1)
-          |> Stream.filter(&match?({:ok, _}, &1))
-          |> Stream.map(fn {:ok, event} -> event end)
-          |> Enum.to_list()
-
-        findings =
-          detectors
-          |> Task.async_stream(fn det -> det.detect(events, opts) end,
-            ordered: false,
-            timeout: :timer.minutes(5)
-          )
-          |> Enum.flat_map(fn {:ok, fs} -> fs end)
-
-        {:ok, findings}
-    end
+    {:ok, events} = parse(File.stream!(path), opts)
+    {:ok, detect(events, opts)}
   end
 end
