@@ -43,8 +43,8 @@ defmodule Clickguard.Detector.FreqIpTest do
 
     test "two IP's, both exceed threshold, produce two findings" do
       bad = EB.burst({127, 0, 0, 1}, @base_ts, 300, 10)
-      good = EB.burst({127, 0, 0, 2}, @base_ts, 300, 10)
-      events = bad ++ good
+      worse = EB.burst({127, 0, 0, 2}, @base_ts, 500, 10)
+      events = bad ++ worse
 
       assert [f1, f2] = FreqIp.detect(events, [])
       assert f1.subject == "127.0.0.1"
