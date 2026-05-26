@@ -10,9 +10,13 @@ defmodule Clickguard.MixProject do
       deps: deps(),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/project.plt"}
-      ]
+      ],
+      elixirc_paths: elixirc_paths(Mix.env())
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do

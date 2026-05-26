@@ -47,9 +47,9 @@ defmodule Clickguard.Event do
     "127.0.0.1"
   """
   @spec ip_string(t()) :: String.t() | nil
-  def ip_string(%__MODULE__{ip: nil}), do: nil
+  def ip_string(%__MODULE__{ip: ip}), do: format_ip(ip)
 
-  def ip_string(%__MODULE__{ip: ip}) do
-    ip |> :inet.ntoa() |> to_string()
-  end
+  @spec format_ip(:inet.ip_address() | nil) :: String.t() | nil
+  def format_ip(nil), do: nil
+  def format_ip(ip), do: ip |> :inet.ntoa() |> to_string()
 end
