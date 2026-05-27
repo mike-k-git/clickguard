@@ -9,7 +9,8 @@ defmodule Clickguard.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: [
-        plt_file: {:no_warn, "priv/plts/project.plt"}
+        plt_file: {:no_warn, "priv/plts/project.plt"},
+        plt_add_apps: [:mix]
       ],
       elixirc_paths: elixirc_paths(Mix.env())
     ]
