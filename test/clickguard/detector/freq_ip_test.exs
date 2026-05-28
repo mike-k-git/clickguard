@@ -56,14 +56,14 @@ defmodule Clickguard.Detector.FreqIpTest do
     test "custom :threshold via opts overrides default" do
       events = EB.burst({127, 0, 0, 1}, @base_ts, 50, 10)
 
-      assert [%Finding{evidence: %{count: _count, threshold: 50, window_ms: _window_ms}}] =
+      assert [%Finding{evidence: %{threshold: 50}}] =
                FreqIp.detect(events, threshold: 50)
     end
 
     test "custom :window_ms via opts overrides default" do
       events = EB.burst({127, 0, 0, 1}, @base_ts, 300, 10)
 
-      assert [%Finding{evidence: %{count: _count, threshold: _threshold, window_ms: 10_000}}] =
+      assert [%Finding{evidence: %{window_ms: 10_000}}] =
                FreqIp.detect(events, window_ms: 10_000)
     end
   end
@@ -74,12 +74,22 @@ defmodule Clickguard.Detector.FreqIpTest do
 
       assert [f] = FreqIp.detect(events, [])
       assert f.subject == "127.0.0.1"
-      assert f.rule == :freq_ip
+      assert f.rule == :high_frequency_ip
       assert f.severity == :low
-      assert %{count: count, threshold: threshold, window_ms: window_ms} = f.evidence
-      assert count == 300
+
+      assert %{
+               event_count: event_count,
+               threshold: threshold,
+               window_ms: window_ms,
+               window_start: window_start,
+               window_end: window_end
+             } = f.evidence
+
+      assert event_count == 300
       assert threshold == 300
       assert window_ms == 60_000
+      assert window_start == @base_ts
+      assert window_end == DateTime.add(@base_ts, 299 * 10, :millisecond)
       assert length(f.sample_events) == 5
     end
   end
