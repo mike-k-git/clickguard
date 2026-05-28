@@ -7,8 +7,15 @@ defmodule Clickguard.Detector.FreqIp do
   Severity: low
   """
   @behaviour Clickguard.Detector
-  alias Clickguard.Event
-  alias Clickguard.Finding
+  alias Clickguard.{Event, Finding}
+
+  @type evidence :: %{
+          event_count: pos_integer(),
+          threshold: pos_integer(),
+          window_ms: pos_integer(),
+          window_start: DateTime.t(),
+          window_end: DateTime.t()
+        }
 
   @default_threshold 300
   @default_window_ms 60_000
@@ -25,32 +32,32 @@ defmodule Clickguard.Detector.FreqIp do
     events
     |> Enum.group_by(& &1.ip)
     |> Enum.flat_map(fn {ip, evts} ->
-      if window = offending_window(evts, threshold, window_ms) do
-        [build_finding(ip, window, window_ms, threshold, detected_at)]
-      else
-        []
+      case offending_window(evts, threshold, window_ms) do
+        {window, count} -> [build_finding(ip, window, count, window_ms, threshold, detected_at)]
+        nil -> []
       end
     end)
   end
 
   defp offending_window(events, threshold, window_ms) do
-    events
-    |> Enum.sort_by(& &1.timestamp)
-    |> Enum.reduce_while(nil, fn event, acc ->
-      {window, count} = acc || {:queue.new(), 0}
-      cutoff = DateTime.add(event.timestamp, -window_ms, :millisecond)
-      {pruned, pruned_count} = prune(&DateTime.before?(&1.timestamp, cutoff), window, count)
-      new_window = :queue.in(event, pruned)
-      new_count = pruned_count + 1
+    result =
+      events
+      |> Enum.sort_by(& &1.timestamp)
+      |> Enum.reduce_while({:queue.new(), 0}, fn event, {window, count} ->
+        cutoff = DateTime.add(event.timestamp, -window_ms, :millisecond)
+        {pruned, pruned_count} = prune(&DateTime.before?(&1.timestamp, cutoff), window, count)
+        new_window = :queue.in(event, pruned)
+        new_count = pruned_count + 1
 
-      if new_count >= threshold do
-        {:halt, :queue.to_list(new_window)}
-      else
-        {:cont, {new_window, new_count}}
-      end
-    end)
-    |> case do
-      list when is_list(list) -> list
+        if new_count >= threshold do
+          {:halt, {:found, :queue.to_list(new_window), new_count}}
+        else
+          {:cont, {new_window, new_count}}
+        end
+      end)
+
+    case result do
+      {:found, list, count} -> {list, count}
       _ -> nil
     end
   end
@@ -71,14 +78,33 @@ defmodule Clickguard.Detector.FreqIp do
     end
   end
 
-  defp build_finding(ip, window, window_ms, threshold, detected_at) do
+  defp build_finding(ip, window, count, window_ms, threshold, detected_at) do
     %Finding{
-      rule: name(),
+      rule: :high_frequency_ip,
       severity: :low,
       subject: Event.format_ip(ip),
-      evidence: %{count: length(window), threshold: threshold, window_ms: window_ms},
-      sample_events: Enum.take(window, 5),
+      evidence: build_evidence(window, count, threshold, window_ms),
+      sample_events: sample(window),
       detected_at: detected_at
     }
+  end
+
+  @spec build_evidence([Event.t()], pos_integer(), pos_integer(), pos_integer()) :: evidence()
+  defp build_evidence(window, count, threshold, window_ms) do
+    %{
+      event_count: count,
+      threshold: threshold,
+      window_ms: window_ms,
+      window_start: hd(window).timestamp,
+      window_end: List.last(window).timestamp
+    }
+  end
+
+  defp sample(window) do
+    if length(window) < 5 do
+      window
+    else
+      Enum.take(window, 3) ++ Enum.take(window, -2)
+    end
   end
 end
