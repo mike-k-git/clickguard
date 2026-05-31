@@ -84,7 +84,7 @@ defmodule Clickguard.Detector.FreqIp do
       severity: :low,
       subject: Event.format_ip(ip),
       evidence: build_evidence(window, count, threshold, window_ms),
-      sample_events: sample(window),
+      sample_events: Event.sample(window),
       detected_at: detected_at
     }
   end
@@ -98,13 +98,5 @@ defmodule Clickguard.Detector.FreqIp do
       window_start: hd(window).timestamp,
       window_end: List.last(window).timestamp
     }
-  end
-
-  defp sample(window) do
-    if length(window) < 5 do
-      window
-    else
-      Enum.take(window, 3) ++ Enum.take(window, -2)
-    end
   end
 end
