@@ -5,9 +5,11 @@ defmodule Mix.Tasks.Clickguard.Gen.Fixture do
 
   ## Command line options
 
-  * `--lines` - number of random generated events
-  * `--out` - path to the destination file
-  * `--freqip` - guarantees at least one `FreqIp` finding
+    * `--lines`       - number of random generated events
+    * `--out`         - path to the destination file
+    * `--freqip`      - at least one `FreqIp` finding
+    * `--bad-ua`      - at least one `UserAgent` finding
+    * `--bad-referer` - at least one `Referer` finding
 
   """
 
@@ -18,7 +20,15 @@ defmodule Mix.Tasks.Clickguard.Gen.Fixture do
     Mix.Project.get!()
 
     {opts, _, _} =
-      OptionParser.parse(args, strict: [lines: :integer, out: :string, freqip: :boolean])
+      OptionParser.parse(args,
+        strict: [
+          lines: :integer,
+          out: :string,
+          freqip: :boolean,
+          bad_ua: :boolean,
+          bad_referer: :boolean
+        ]
+      )
 
     {total, out} = Clickguard.Fixtures.generate(opts)
     Mix.shell().info("Wrote #{total} lines to #{out}")
