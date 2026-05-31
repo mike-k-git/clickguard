@@ -9,6 +9,7 @@ defmodule Clickguard.Fixtures do
   @targets ["/index.html", "/index.php", "/", "/admin-login", "/postback?aff_id=123&offer_id=321"]
   @methods ["GET", "POST"]
   @base_ts ~U[2026-01-01 00:00:00.00Z]
+  @ts_format "[%d/%b/%Y:%H:%M:%S +0000]"
   @referers [
     "https://www.example.com/search?q=open+source+database+tools",
     "https://news.example.com/item?id=482942418",
@@ -23,50 +24,91 @@ defmodule Clickguard.Fixtures do
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0"
   ]
 
+  @bad_user_agents [
+    "python-requests/2.31.0",
+    "curl/8.4.0",
+    "Mozilla/5.0 (Unknown; Linux i686) AppleWebKit/534.34 (KHTML, like Gecko) PhantomJS/1.9.8 Safari/534.34",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.7499.4 Safari/537.36",
+    "Wget/1.21.4",
+    "Go-http-client/2.0",
+    ""
+  ]
+
+  # must stay in sync with Referer @default_spam_domains
+  @bad_referers [
+    "https://brandedleadgeneration.com/",
+    "https://www.addshoppers.com",
+    "https://7minuteworkout.com",
+    ""
+  ]
+
   def generate(opts \\ []) do
     lines = Keyword.get(opts, :lines, 500)
     out = Keyword.get(opts, :out, "test/fixtures/sample_clf.log")
     freqip = Keyword.get(opts, :freqip, false)
+    bad_ua = Keyword.get(opts, :bad_ua, false)
+    bad_referer = Keyword.get(opts, :bad_referer, false)
 
     :rand.seed(:exsss, 4711)
 
-    good_lines =
-      if lines >= 1 do
-        for n <- 1..lines do
-          ts =
-            DateTime.add(@base_ts, n, :second)
-            |> Calendar.strftime("[%d/%b/%Y:%H:%M:%S +0000]")
+    good_lines = if lines >= 1, do: generate_good_lines(lines), else: []
+    freqip_lines = if freqip, do: generate_freqip_lines(), else: []
+    bad_ua_lines = if bad_ua, do: generate_bad_ua_lines(), else: []
+    bad_referer_lines = if bad_referer, do: generate_bad_referer_lines(), else: []
 
-          clf_line(ts: ts)
-        end
-      else
-        []
-      end
-
-    freqip_lines =
-      if freqip do
-        for n <- 0..299 do
-          ip = "127.0.0.1"
-
-          ts =
-            DateTime.add(@base_ts, n * 200, :millisecond)
-            |> Calendar.strftime("[%d/%b/%Y:%H:%M:%S +0000]")
-
-          clf_line(ip: ip, ts: ts)
-        end
-      else
-        []
-      end
-
-    # |> Enum.shuffle() |> Enum.join("\n")
-    output = (freqip_lines ++ good_lines) |> Enum.join("\n")
+    output =
+      (freqip_lines ++ good_lines ++ bad_ua_lines ++ bad_referer_lines)
+      # |> Enum.shuffle()
+      |> Enum.join("\n")
 
     File.mkdir_p!(Path.dirname(out))
     File.write!(out, output)
 
-    total = length(good_lines) + length(freqip_lines)
+    total =
+      length(good_lines) + length(freqip_lines) + length(bad_ua_lines) + length(bad_referer_lines)
 
     {total, out}
+  end
+
+  defp generate_good_lines(lines) do
+    for n <- 1..lines, do: clf_line(ts: ts(n))
+  end
+
+  # ms spacing: sustained rate across the window, not a spike
+  defp generate_freqip_lines do
+    for n <- 0..299 do
+      ts =
+        DateTime.add(@base_ts, n * 200, :millisecond)
+        |> Calendar.strftime(@ts_format)
+
+      clf_line(ip: "127.0.0.1", ts: ts)
+    end
+  end
+
+  defp generate_bad_ua_lines do
+    [first, second | rest] = @bad_user_agents
+
+    single_ua_per_ip = [
+      clf_line(ip: "10.0.0.1", ts: ts(0), ua: first),
+      clf_line(ip: "10.0.0.2", ts: ts(10), ua: second)
+    ]
+
+    multiple_ua_per_ip =
+      for ua <- rest, do: clf_line(ip: "10.0.0.10", ts: ts(10), ua: ua)
+
+    single_ua_per_ip ++ multiple_ua_per_ip
+  end
+
+  defp generate_bad_referer_lines do
+    [first | rest] = @bad_referers
+
+    one_domain_across_many_ips =
+      for n <- 0..4, do: clf_line(ip: "192.168.0.#{n + 1}", ts: ts(n), ref: first)
+
+    other_events =
+      for ref <- rest, do: clf_line(ip: "192.168.0.10", ts: ts(10), ref: ref)
+
+    one_domain_across_many_ips ++ other_events
   end
 
   defp clf_line(fields) do
@@ -84,6 +126,9 @@ defmodule Clickguard.Fixtures do
 
     "#{ip} #{identity} #{username} #{ts} \"#{method} #{target} HTTP/#{http_version}\" #{response_code} #{size} \"#{ref}\" \"#{ua}\""
   end
+
+  defp ts(offset_s),
+    do: DateTime.add(@base_ts, offset_s, :second) |> Calendar.strftime(@ts_format)
 
   defp username, do: Enum.random(@usernames)
   defp method, do: Enum.random(@methods)

@@ -12,6 +12,7 @@ defmodule Clickguard.Finding do
           severity: severity(),
           subject: String.t(),
           evidence: map(),
+          # nonempty_list() ?
           sample_events: [Event.t()],
           detected_at: DateTime.t()
         }

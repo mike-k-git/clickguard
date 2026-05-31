@@ -52,4 +52,8 @@ defmodule Clickguard.Event do
   @spec format_ip(:inet.ip_address() | nil) :: String.t() | nil
   def format_ip(nil), do: nil
   def format_ip(ip), do: ip |> :inet.ntoa() |> to_string()
+
+  @spec sample([%__MODULE__{}]) :: [%__MODULE__{}]
+  def sample(events) when length(events) < 5, do: events
+  def sample(events), do: Enum.take(events, 3) ++ Enum.take(events, -2)
 end
