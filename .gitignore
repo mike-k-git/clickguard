@@ -25,3 +25,6 @@ clickguard-*.tar
 # dialyzer
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
+
+# misc
+.DS_Store
