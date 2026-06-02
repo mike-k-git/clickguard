@@ -58,7 +58,7 @@ defmodule Clickguard.Fixtures do
 
     output =
       (freqip_lines ++ good_lines ++ bad_ua_lines ++ bad_referer_lines)
-      # |> Enum.shuffle()
+      |> Enum.shuffle()
       |> Enum.join("\n")
 
     File.mkdir_p!(Path.dirname(out))
@@ -89,26 +89,28 @@ defmodule Clickguard.Fixtures do
     [first, second | rest] = @bad_user_agents
 
     single_ua_per_ip = [
-      clf_line(ip: "10.0.0.1", ts: ts(0), ua: first),
-      clf_line(ip: "10.0.0.2", ts: ts(10), ua: second)
+      clf_line(ip: "10.0.0.1", ts: ts(0), user_agent: first),
+      clf_line(ip: "10.0.0.2", ts: ts(10), user_agent: second)
     ]
 
     multiple_ua_per_ip =
-      for ua <- rest, do: clf_line(ip: "10.0.0.10", ts: ts(10), ua: ua)
+      for ua <- rest, do: clf_line(ip: "10.0.0.10", ts: ts(10), user_agent: ua)
 
     single_ua_per_ip ++ multiple_ua_per_ip
   end
 
   defp generate_bad_referer_lines do
-    [first | rest] = @bad_referers
+    [first, second | rest] = @bad_referers
 
-    one_domain_across_many_ips =
-      for n <- 0..4, do: clf_line(ip: "192.168.0.#{n + 1}", ts: ts(n), ref: first)
+    single_ref_per_ip = [
+      clf_line(ip: "192.168.1.1", ts: ts(0), referer: first),
+      clf_line(ip: "192.168.1.2", ts: ts(10), referer: second)
+    ]
 
-    other_events =
-      for ref <- rest, do: clf_line(ip: "192.168.0.10", ts: ts(10), ref: ref)
+    multiple_ref_per_ip =
+      for ref <- rest, do: clf_line(ip: "192.168.1.10", ts: ts(10), referer: ref)
 
-    one_domain_across_many_ips ++ other_events
+    single_ref_per_ip ++ multiple_ref_per_ip
   end
 
   defp clf_line(fields) do
@@ -121,8 +123,8 @@ defmodule Clickguard.Fixtures do
     http_version = Keyword.get_lazy(fields, :http_version, &http_version/0)
     response_code = Keyword.get_lazy(fields, :response_code, &response_code/0)
     size = Keyword.get_lazy(fields, :size, &size/0)
-    ua = Keyword.get_lazy(fields, :ua, &user_agent/0)
-    ref = Keyword.get_lazy(fields, :ref, &referer/0)
+    ua = Keyword.get_lazy(fields, :user_agent, &user_agent/0)
+    ref = Keyword.get_lazy(fields, :referer, &referer/0)
 
     "#{ip} #{identity} #{username} #{ts} \"#{method} #{target} HTTP/#{http_version}\" #{response_code} #{size} \"#{ref}\" \"#{ua}\""
   end
