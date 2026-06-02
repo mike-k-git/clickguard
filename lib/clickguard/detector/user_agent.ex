@@ -2,7 +2,7 @@ defmodule Clickguard.Detector.UserAgent do
   @moduledoc """
   Flags requests by automated/headless user agents, keyed by IP.
 
-  Rules (Subject IP):
+  Rules (Subject = IP):
     * :empty_ua - UA nil/blank
     * :automation_tool - python-requests, curl, wget, Go-http-client, Scrapy
     * :headless_browser - HeadlessChrome, PhantomJS
