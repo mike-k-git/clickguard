@@ -82,6 +82,7 @@ defmodule Clickguard.Detector.FreqIp do
     %Finding{
       rule: :high_frequency_ip,
       severity: :low,
+      actor_type: :ip,
       subject: Event.format_ip(ip),
       evidence: build_evidence(window, count, threshold, window_ms),
       sample_events: Event.sample(window),

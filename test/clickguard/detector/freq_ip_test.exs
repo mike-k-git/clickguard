@@ -76,6 +76,7 @@ defmodule Clickguard.Detector.FreqIpTest do
       assert f.subject == "127.0.0.1"
       assert f.rule == :high_frequency_ip
       assert f.severity == :low
+      assert f.actor_type == :ip
 
       assert %{
                event_count: event_count,

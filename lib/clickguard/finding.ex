@@ -11,12 +11,12 @@ defmodule Clickguard.Finding do
           rule: atom(),
           severity: severity(),
           subject: String.t(),
+          actor_type: :ip | :source | :session,
           evidence: map(),
-          # nonempty_list() ?
           sample_events: [Event.t()],
           detected_at: DateTime.t()
         }
 
-  @enforce_keys [:rule, :severity, :subject, :detected_at]
-  defstruct [:rule, :severity, :subject, :evidence, :sample_events, :detected_at]
+  @enforce_keys [:rule, :severity, :subject, :actor_type, :detected_at]
+  defstruct [:rule, :severity, :subject, :actor_type, :evidence, :sample_events, :detected_at]
 end

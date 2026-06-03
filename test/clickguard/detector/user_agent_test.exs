@@ -52,6 +52,7 @@ defmodule Clickguard.Detector.UserAgentTest do
       assert [f] = UserAgent.detect([event], [])
       assert f.subject == "127.0.0.1"
       assert f.rule == :empty_ua
+      assert f.actor_type == :ip
       assert f.evidence.event_count == 1
       assert f.evidence.matched_uas == []
       assert f.severity == :low
@@ -96,6 +97,7 @@ defmodule Clickguard.Detector.UserAgentTest do
       assert [f] = UserAgent.detect([event], [])
       assert f.subject == "127.0.0.1"
       assert f.rule == :automation_tool
+      assert f.actor_type == :ip
       assert f.evidence.event_count == 1
       assert f.evidence.matched_uas == [@automation_ua]
       assert f.severity == :low
@@ -151,6 +153,7 @@ defmodule Clickguard.Detector.UserAgentTest do
       assert [f] = UserAgent.detect([event], [])
       assert f.subject == "127.0.0.1"
       assert f.rule == :headless_browser
+      assert f.actor_type == :ip
       assert f.evidence.event_count == 1
       assert f.evidence.matched_uas == [@headless_ua]
       assert f.severity == :low

@@ -60,6 +60,7 @@ defmodule Clickguard.Detector.UserAgent do
       rule: rule,
       severity: :low,
       subject: ip,
+      actor_type: :ip,
       evidence: build_evidence(events),
       sample_events: Event.sample(events),
       detected_at: detected_at
