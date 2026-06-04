@@ -16,8 +16,8 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "28.0"
-          elixir-version: "1.19.5"
+          otp-version: "28.1"
+          elixir-version: "1.20.0"
 
       - name: Restore dependencies cache
         uses: actions/cache@v5
@@ -48,15 +48,15 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "28.0"
-          elixir-version: "1.19.5"
+          otp-version: "28.1"
+          elixir-version: "1.20.0"
 
       - name: Restore PLT cache
         uses: actions/cache@v5
         with:
           path: priv/plts
-          key: ${{ runner.os }}-plt-${{ hashFiles('mix.lock') }}
-          restore-keys: ${{ runner.os }}-plt-
+          key: ${{ runner.os }}-plt-1.20.0-28.1-${{ hashFiles('mix.lock') }}
+          restore-keys: ${{ runner.os }}-plt-1.20.0-28.1-
 
       - run: mix deps.get
       - run: mix dialyzer --format github
