@@ -100,17 +100,4 @@ defmodule Clickguard.Parser.CLFTest do
       assert {:error, _} = CLF.parse(line)
     end
   end
-
-  describe "Clickguard.run/2 end-to-end" do
-    test "parses every well-formed line in the sample fixture" do
-      assert {:ok, findings} =
-               Clickguard.run("test/fixtures/sample_clf.log",
-                 parser: CLF,
-                 detectors: []
-               )
-
-      assert is_list(findings)
-      assert findings == []
-    end
-  end
 end

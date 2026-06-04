@@ -47,6 +47,7 @@ defmodule Clickguard.Detector.RefererTest do
       assert f.rule == :empty_referer
       assert f.severity == :low
       assert f.subject == "127.0.0.1"
+      assert f.actor_type == :ip
       assert f.evidence.event_count == 1
       assert f.evidence.matched_referers == []
     end
@@ -107,6 +108,7 @@ defmodule Clickguard.Detector.RefererTest do
       assert f.rule == :spam_referer
       assert f.severity == :low
       assert f.subject == "127.0.0.1"
+      assert f.actor_type == :ip
       assert f.evidence.event_count == 1
       assert f.evidence.matched_referers == ["semalt.com"]
       assert f.sample_events == [event]

@@ -26,8 +26,8 @@ defmodule Clickguard.Fixtures do
 
   @bad_user_agents [
     "python-requests/2.31.0",
-    "curl/8.4.0",
     "Mozilla/5.0 (Unknown; Linux i686) AppleWebKit/534.34 (KHTML, like Gecko) PhantomJS/1.9.8 Safari/534.34",
+    "curl/8.4.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.7499.4 Safari/537.36",
     "Wget/1.21.4",
     "Go-http-client/2.0",
@@ -86,11 +86,13 @@ defmodule Clickguard.Fixtures do
   end
 
   defp generate_bad_ua_lines do
-    [first, second | rest] = @bad_user_agents
+    [first, second, third | rest] = @bad_user_agents
 
     single_ua_per_ip = [
       clf_line(ip: "10.0.0.1", ts: ts(0), user_agent: first),
-      clf_line(ip: "10.0.0.2", ts: ts(10), user_agent: second)
+      clf_line(ip: "10.0.0.2", ts: ts(10), user_agent: third),
+      clf_line(ip: "127.0.0.1", ts: ts(0), user_agent: first),
+      clf_line(ip: "127.0.0.1", ts: ts(0), user_agent: second)
     ]
 
     multiple_ua_per_ip =
@@ -104,7 +106,8 @@ defmodule Clickguard.Fixtures do
 
     single_ref_per_ip = [
       clf_line(ip: "192.168.1.1", ts: ts(0), referer: first),
-      clf_line(ip: "192.168.1.2", ts: ts(10), referer: second)
+      clf_line(ip: "192.168.1.2", ts: ts(10), referer: second),
+      clf_line(ip: "127.0.0.1", ts: ts(10), referer: first)
     ]
 
     multiple_ref_per_ip =

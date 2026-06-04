@@ -68,6 +68,7 @@ defmodule Clickguard.Detector.Referer do
       rule: rule,
       severity: :low,
       subject: ip,
+      actor_type: :ip,
       evidence: build_evidence(pairs),
       sample_events: Event.sample(events),
       detected_at: detected_at
