@@ -2,7 +2,7 @@ defmodule Clickguard.Finding do
   @moduledoc """
   Finding model created by detector results.
 
-  All detectors produce a list of `%Finding{}` values; all report builders consume them.
+  All detectors produce a list of `%Finding{}` values; scorer consumes them.
   """
   alias Clickguard.Event
   @type severity :: :low | :medium | :high
