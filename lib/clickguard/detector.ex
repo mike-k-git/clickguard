@@ -5,8 +5,8 @@ defmodule Clickguard.Detector do
   Implementations:
 
     * `Clickguard.Detector.FreqIp` - IPs with >N requests per minute
-    * `Clickguard.Detector.Referer` - empty or suspicious referers (planned)
-    * `Clickguard.Detector.UserAgent` - match known datacenter/headless UAs (planned)
+    * `Clickguard.Detector.Referer` - empty or suspicious referers
+    * `Clickguard.Detector.UserAgent` - match known datacenter/headless UAs
 
   ## Implementing a detector
 

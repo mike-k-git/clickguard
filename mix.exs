@@ -8,12 +8,17 @@ defmodule Clickguard.MixProject do
       elixir: "~> 1.20",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      escript: escript(),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/project.plt"},
         plt_add_apps: [:mix]
       ],
       elixirc_paths: elixirc_paths(Mix.env())
     ]
+  end
+
+  defp escript do
+    [main_module: Clickguard.CLI]
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]

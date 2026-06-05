@@ -63,11 +63,8 @@ defmodule Clickguard do
   def run(path, opts \\ []) do
     {:ok, events} = parse(File.stream!(path), opts)
     {:ok, findings} = detect(events, opts)
-
-    {:ok,
-     Scorer.score(
-       findings,
-       actor_totals(events)
-     )}
+    {:ok, Scorer.score(findings, actor_totals(events))}
+  rescue
+    e in File.Error -> {:error, e.reason}
   end
 end
