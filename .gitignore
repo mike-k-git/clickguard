@@ -29,4 +29,3 @@ clickguard-*.tar
 # misc
 .DS_Store
 /clickguard
-/test/fixtures/*

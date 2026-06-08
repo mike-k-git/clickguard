@@ -4,10 +4,10 @@ defmodule Clickguard.Reporter.Text do
 
   Output is sorted by `band`, from the most severe to the least.
   """
+  alias Clickguard.Reporter
   @behaviour Clickguard.Reporter
 
   @severity_rank %{high: 0, medium: 1, low: 2}
-  @band_rank %{fraud: 0, suspect: 1, clear: 2}
 
   @impl true
   def format(scores) do
@@ -15,7 +15,7 @@ defmodule Clickguard.Reporter.Text do
 
     rows =
       scores
-      |> Enum.sort_by(fn s -> {Map.get(@band_rank, s.band), -s.score} end)
+      |> Reporter.sort()
       |> Enum.map(fn score ->
         {actor_type, actor} = score.actor
 

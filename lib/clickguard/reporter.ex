@@ -20,4 +20,8 @@ defmodule Clickguard.Reporter do
   alias Clickguard.Score
 
   @callback format(scores :: [Score.t()]) :: iodata()
+
+  @band_rank %{fraud: 0, suspect: 1, clear: 2}
+  @spec sort([Score.t()]) :: [Score.t()]
+  def sort(scores), do: Enum.sort_by(scores, &{@band_rank[&1.band], -&1.score})
 end
