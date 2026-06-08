@@ -55,16 +55,19 @@ defmodule Clickguard do
   end
 
   @doc """
-  Run the full pipeline against a log file at `path`.
+  Run the full pipeline against a log file at `path` or from `:stdio`.
 
   Parse a log, run detectors, and emit a list of scores.
   """
-  @spec run(Path.t(), opts()) :: {:ok, [Score.t()]} | {:error, term()}
-  def run(path, opts \\ []) do
-    {:ok, events} = parse(File.stream!(path), opts)
+  @spec run(Path.t() | Enumerable.t(), opts()) :: {:ok, [Score.t()]} | {:error, term()}
+  def run(path, opts \\ [])
+  def run(path, opts) when is_binary(path), do: run(File.stream!(path), opts)
+
+  def run(input, opts) do
+    {:ok, events} = parse(input, opts)
     {:ok, findings} = detect(events, opts)
     {:ok, Scorer.score(findings, actor_totals(events))}
   rescue
-    e in File.Error -> {:error, e.reason}
+    e in File.Error -> {:error, to_string(:file.format_error(e.reason))}
   end
 end
