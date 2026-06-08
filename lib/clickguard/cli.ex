@@ -41,9 +41,10 @@ defmodule Clickguard.CLI do
     end
   end
 
-  @spec run([String.t()]) :: {:ok, iodata(), non_neg_integer()} | {:error, String.t()}
-  def run(args) do
-    with {:ok, input, reporter, fail_bands} <- parse_args(args),
+  @spec run([String.t()], Enumerable.t()) ::
+          {:ok, iodata(), non_neg_integer()} | {:error, String.t()}
+  def run(args, stdin \\ IO.stream(:stdio, :line)) do
+    with {:ok, input, reporter, fail_bands} <- parse_args(args, stdin),
          {:ok, scores} <- Clickguard.run(input) do
       output = reporter.format(scores)
       exit_code = if Enum.any?(scores, &(&1.band in fail_bands)), do: 2, else: 0
@@ -51,12 +52,12 @@ defmodule Clickguard.CLI do
     end
   end
 
-  defp parse_args(args) do
+  defp parse_args(args, stdin) do
     {opts, positional, invalid} =
       OptionParser.parse(args, strict: [format: :string, fail_on: :string])
 
     with :ok <- check_invalid(invalid),
-         {:ok, input} <- check_positional(positional),
+         {:ok, input} <- check_positional(positional, stdin),
          {:ok, reporter, fail_on_bands} <- build_opts(opts) do
       {:ok, input, reporter, fail_on_bands}
     end
@@ -70,11 +71,11 @@ defmodule Clickguard.CLI do
       else: {:error, "unknown option #{flag}"}
   end
 
-  defp check_positional(positional) do
+  defp check_positional(positional, stdin) do
     case positional do
       [input] -> {:ok, input}
+      [] -> {:ok, stdin}
       [_ | _] -> {:error, "too many positional arguments, expected exactly one input file"}
-      [] -> {:error, "no positional arguments, expected exactly one input file"}
     end
   end
 
