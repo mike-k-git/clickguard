@@ -20,7 +20,7 @@ defmodule Clickguard.CLI do
   alias Clickguard.Reporter
 
   @known_flags ~w(--format --fail-on)
-  @reporters %{"text" => Reporter.Text}
+  @reporters %{"text" => Reporter.Text, "json" => Reporter.JSON}
   @fail_on_bands %{"suspect" => [:suspect, :fraud], "fraud" => [:fraud]}
 
   @success_code 0
