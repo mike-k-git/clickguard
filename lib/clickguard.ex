@@ -51,7 +51,7 @@ defmodule Clickguard do
 
   @spec actor_totals([Event.t()]) :: %{String.t() => non_neg_integer()}
   def actor_totals(events) do
-    Enum.frequencies_by(events, fn event -> Event.format_ip(event.ip) end)
+    Enum.frequencies_by(events, fn event -> {:ip, Event.format_ip(event.ip)} end)
   end
 
   @doc """
