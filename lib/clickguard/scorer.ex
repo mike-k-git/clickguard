@@ -12,14 +12,11 @@ defmodule Clickguard.Scorer do
     |> Enum.map(fn {actor, actor_findings} ->
       summary = rule_summary(actor_findings)
       {band, score} = score_actor(summary)
-      {_type, value} = actor
 
       %Score{
         actor: actor,
         total_findings: length(actor_findings),
-        # Keyed by IP string. Breaks when actor_type is :source or :session.
-        # Re-key total_by_actor by {actor_type, subject}.
-        total_events: total_by_actor[value],
+        total_events: total_by_actor[actor],
         rule_summary: summary,
         band: band,
         score: score

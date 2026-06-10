@@ -3,8 +3,8 @@ defmodule Clickguard.ScorerTest do
 
   @base_ts ~U[2016-05-24 13:26:08.003Z]
 
+  alias Clickguard.{Event, Finding, Scorer}
   alias Clickguard.EventBuilder, as: EB
-  alias Clickguard.{Finding, Scorer}
 
   describe "score/2" do
     test "produces no scores without findings" do
@@ -137,6 +137,8 @@ defmodule Clickguard.ScorerTest do
 
   describe "score/2 - synthetic events" do
     test ":medium severity event produces Score with :fraud band and 3 score" do
+      events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000)
+
       finding = %Finding{
         rule: :fake_medium_rule,
         severity: :medium,
@@ -146,11 +148,11 @@ defmodule Clickguard.ScorerTest do
           event_count: 10,
           matched_values: ["val1", "val2"]
         },
-        sample_events: EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000),
+        sample_events: Event.sample(events),
         detected_at: DateTime.now!("Etc/UTC")
       }
 
-      assert [score] = Scorer.score([finding], %{"127.0.0.1" => 10})
+      assert [score] = Scorer.score([finding], Clickguard.actor_totals(events))
       assert score.band == :suspect
       assert score.rule_summary == %{fake_medium_rule: {:medium, 10}}
       assert score.score == 3
@@ -159,6 +161,8 @@ defmodule Clickguard.ScorerTest do
     end
 
     test ":high severity event produces Score with :fraud band and 16 score" do
+      events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000)
+
       finding = %Finding{
         rule: :fake_high_rule,
         severity: :high,
@@ -168,11 +172,11 @@ defmodule Clickguard.ScorerTest do
           event_count: 10,
           matched_values: ["val1", "val2"]
         },
-        sample_events: EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000),
+        sample_events: Event.sample(events),
         detected_at: DateTime.now!("Etc/UTC")
       }
 
-      assert [score] = Scorer.score([finding], %{"127.0.0.1" => 10})
+      assert [score] = Scorer.score([finding], Clickguard.actor_totals(events))
       assert score.band == :fraud
       assert score.rule_summary == %{fake_high_rule: {:high, 10}}
       assert score.score == 16
