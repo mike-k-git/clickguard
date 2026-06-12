@@ -49,9 +49,13 @@ defmodule Clickguard do
     {:ok, findings}
   end
 
-  @spec actor_totals([Event.t()]) :: %{String.t() => non_neg_integer()}
+  @spec actor_totals([Event.t()]) :: %{{atom(), String.t()} => non_neg_integer()}
   def actor_totals(events) do
-    Enum.frequencies_by(events, fn event -> {:ip, Event.format_ip(event.ip)} end)
+    Enum.reduce(events, %{}, fn event, acc ->
+      acc
+      |> Map.update({:ip, Event.format_ip(event.ip)}, 1, &(&1 + 1))
+      |> Map.update({:session, Event.session_key(event)}, 1, &(&1 + 1))
+    end)
   end
 
   @doc """

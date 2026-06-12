@@ -135,6 +135,20 @@ defmodule Clickguard.ScorerTest do
     end
   end
 
+  describe "score/2 - total_events and evidence.event_count are different numbers" do
+    test "for :session key" do
+      events =
+        EB.burst({127, 0, 0, 1}, @base_ts, 40, 10_000) ++
+          EB.burst({127, 0, 0, 1}, DateTime.add(@base_ts, 1, :hour), 10, 1_000)
+
+      {:ok, [finding]} = Clickguard.detect(events, detectors: [Clickguard.Detector.ClickVelocity])
+
+      assert [score] = Scorer.score([finding], Clickguard.actor_totals(events))
+      assert score.total_events == 50
+      assert finding.evidence.event_count == 10
+    end
+  end
+
   describe "score/2 - synthetic events" do
     test ":medium severity event produces Score with :fraud band and 3 score" do
       events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000)
