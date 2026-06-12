@@ -48,6 +48,7 @@ defmodule Clickguard.Fixtures do
     freqip = Keyword.get(opts, :freqip, false)
     bad_ua = Keyword.get(opts, :bad_ua, false)
     bad_referer = Keyword.get(opts, :bad_referer, false)
+    velocity = Keyword.get(opts, :velocity, false)
 
     :rand.seed(:exsss, 4711)
 
@@ -55,9 +56,10 @@ defmodule Clickguard.Fixtures do
     freqip_lines = if freqip, do: generate_freqip_lines(), else: []
     bad_ua_lines = if bad_ua, do: generate_bad_ua_lines(), else: []
     bad_referer_lines = if bad_referer, do: generate_bad_referer_lines(), else: []
+    velocity_lines = if velocity, do: generate_velocity_lines(), else: []
 
     output =
-      (freqip_lines ++ good_lines ++ bad_ua_lines ++ bad_referer_lines)
+      (freqip_lines ++ good_lines ++ bad_ua_lines ++ bad_referer_lines ++ velocity_lines)
       |> Enum.shuffle()
       |> Enum.join("\n")
 
@@ -65,7 +67,8 @@ defmodule Clickguard.Fixtures do
     File.write!(out, output)
 
     total =
-      length(good_lines) + length(freqip_lines) + length(bad_ua_lines) + length(bad_referer_lines)
+      length(good_lines) + length(freqip_lines) + length(bad_ua_lines) + length(bad_referer_lines) +
+        length(velocity_lines)
 
     {total, out}
   end
@@ -76,13 +79,25 @@ defmodule Clickguard.Fixtures do
 
   # ms spacing: sustained rate across the window, not a spike
   defp generate_freqip_lines do
-    for n <- 0..299 do
-      ts =
-        DateTime.add(@base_ts, n * 200, :millisecond)
-        |> Calendar.strftime(@ts_format)
+    generate_random_uas(300)
+    |> Enum.with_index()
+    |> Enum.map(fn {ua, idx} ->
+      clf_line(
+        ip: "127.0.0.1",
+        ts: DateTime.add(@base_ts, idx * 200, :millisecond) |> Calendar.strftime(@ts_format),
+        user_agent: ua
+      )
+    end)
+  end
 
-      clf_line(ip: "127.0.0.1", ts: ts)
-    end
+  defp generate_velocity_lines do
+    for n <- 1..20,
+        do:
+          clf_line(
+            ip: "172.16.0.1",
+            ts: DateTime.add(@base_ts, n, :second) |> Calendar.strftime(@ts_format),
+            user_agent: "high-velocity-browser"
+          )
   end
 
   defp generate_bad_ua_lines do
@@ -157,5 +172,13 @@ defmodule Clickguard.Fixtures do
       do: Enum.random(1..255)
     )
     |> Enum.join(".")
+  end
+
+  def generate_random_ua,
+    do:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/#{Enum.random(1..150)}.#{Enum.random(1..10)}.#{Enum.random(1..10)}.#{Enum.random(1..10_000)} Safari/537.36"
+
+  def generate_random_uas(n) do
+    for _ <- 1..n, do: generate_random_ua()
   end
 end
