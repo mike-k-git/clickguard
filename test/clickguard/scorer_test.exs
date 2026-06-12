@@ -8,14 +8,14 @@ defmodule Clickguard.ScorerTest do
 
   describe "score/2" do
     test "produces no scores without findings" do
-      events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000)
+      events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000)
       {:ok, findings} = Clickguard.detect(events, [])
 
       assert Scorer.score(findings, Clickguard.actor_totals(events)) == []
     end
 
     test "produces :clear score for :epmty_referer detection" do
-      events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000, referer: nil)
+      events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000, referer: nil)
       {:ok, findings} = Clickguard.detect(events, [])
 
       assert [score] = Scorer.score(findings, Clickguard.actor_totals(events))
@@ -28,7 +28,7 @@ defmodule Clickguard.ScorerTest do
     end
 
     test "produces :clear score for :empty_ua detection" do
-      events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000, user_agent: nil)
+      events = EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000, user_agent: nil)
       {:ok, findings} = Clickguard.detect(events, [])
 
       assert [score] = Scorer.score(findings, Clickguard.actor_totals(events))
@@ -43,8 +43,8 @@ defmodule Clickguard.ScorerTest do
     test "produces :clear score for two distinct :empty_* detections" do
       events =
         [
-          EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000, user_agent: nil),
-          EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000, referer: nil)
+          EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000, user_agent: nil),
+          EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000, referer: nil)
         ]
         |> List.flatten()
 
@@ -62,7 +62,7 @@ defmodule Clickguard.ScorerTest do
     test "produces :clear score for one :empty_* and one other :low detections" do
       events =
         [
-          EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000, user_agent: nil),
+          EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000, user_agent: nil),
           EB.burst({127, 0, 0, 1}, @base_ts, 400, 10)
         ]
         |> List.flatten()
@@ -81,7 +81,7 @@ defmodule Clickguard.ScorerTest do
     test "produces :suspect score for detections with 1 < score <= 3" do
       events =
         [
-          EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000, user_agent: "headlesschrome"),
+          EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000, user_agent: "headlesschrome"),
           EB.burst({127, 0, 0, 1}, @base_ts, 400, 10,
             referer: "https://brandedleadgeneration.com"
           )
@@ -108,8 +108,8 @@ defmodule Clickguard.ScorerTest do
     test "produces :fraud score for detections with score > 3" do
       events =
         [
-          EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000, user_agent: "curl"),
-          EB.burst({127, 0, 0, 1}, @base_ts, 10, 1_000, user_agent: "headlesschrome"),
+          EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000, user_agent: "curl"),
+          EB.burst({127, 0, 0, 1}, @base_ts, 10, 3_000, user_agent: "headlesschrome"),
           EB.burst({127, 0, 0, 1}, @base_ts, 400, 10,
             referer: "https://brandedleadgeneration.com"
           )
@@ -138,8 +138,10 @@ defmodule Clickguard.ScorerTest do
   describe "score/2 - total_events and evidence.event_count are different numbers" do
     test "for :session key" do
       events =
-        EB.burst({127, 0, 0, 1}, @base_ts, 40, 10_000) ++
-          EB.burst({127, 0, 0, 1}, DateTime.add(@base_ts, 1, :hour), 10, 1_000)
+        EB.burst({127, 0, 0, 1}, @base_ts, 40, 10_000, user_agent: "test-velocity_ua") ++
+          EB.burst({127, 0, 0, 1}, DateTime.add(@base_ts, 1, :hour), 10, 1_000,
+            user_agent: "test-velocity_ua"
+          )
 
       {:ok, [finding]} = Clickguard.detect(events, detectors: [Clickguard.Detector.ClickVelocity])
 

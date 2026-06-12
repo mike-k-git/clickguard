@@ -10,6 +10,14 @@ defmodule Clickguard.PipelineGoldenTest do
   alias Clickguard.Score
 
   @expected [
+    %Clickguard.Score{
+      actor: {:session, "172.16.0.1|high-velocity-browser"},
+      band: :fraud,
+      rule_summary: %{click_velocity: {:high, 20}},
+      score: 16,
+      total_events: 20,
+      total_findings: 1
+    },
     %Score{
       actor: {:ip, "10.0.0.1"},
       band: :clear,
@@ -82,7 +90,13 @@ defmodule Clickguard.PipelineGoldenTest do
       Path.join(System.tmp_dir!(), "clickguard_golden_#{System.unique_integer([:positive])}.log")
 
     {_total, ^path} =
-      Clickguard.Fixtures.generate(out: path, freqip: true, bad_ua: true, bad_referer: true)
+      Clickguard.Fixtures.generate(
+        out: path,
+        freqip: true,
+        bad_ua: true,
+        bad_referer: true,
+        velocity: true
+      )
 
     on_exit(fn -> File.rm(path) end)
     {:ok, path: path}
@@ -113,5 +127,12 @@ defmodule Clickguard.PipelineGoldenTest do
              Enum.sort(["Wget/1.21.4", "Go-http-client/2.0"])
 
     assert find.(:empty_ua, "10.0.0.10").evidence.matched_uas == []
+
+    high_velocity = find.(:click_velocity, "172.16.0.1|high-velocity-browser")
+    assert high_velocity.severity == :high
+    assert high_velocity.actor_type == :session
+    assert high_velocity.evidence.event_count == 20
+    assert high_velocity.evidence.max_burst == 1
+    assert high_velocity.evidence.median_delta_ms == 1000.0
   end
 end
