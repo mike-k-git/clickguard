@@ -1,7 +1,7 @@
 defmodule Clickguard.EventBuilder do
   @moduledoc false
 
-  alias Clickguard.Event
+  alias Clickguard.{Event, Fixtures}
 
   def event(ip, timestamp, attrs \\ []) do
     base = %Event{
@@ -12,8 +12,8 @@ defmodule Clickguard.EventBuilder do
       status: 200,
       bytes: 0,
       referer: "https://google.com",
-      user_agent:
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:151.0) Gecko/20100101 Firefox/151.0",
+      # nondeterministic user-agent generator, prevents collisions between freq_ip and click_velocity detections
+      user_agent: Fixtures.generate_random_ua(),
       raw: ""
     }
 
