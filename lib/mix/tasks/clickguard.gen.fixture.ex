@@ -10,6 +10,7 @@ defmodule Mix.Tasks.Clickguard.Gen.Fixture do
     * `--freqip`      - at least one `FreqIp` finding
     * `--bad-ua`      - at least one `UserAgent` finding
     * `--bad-referer` - at least one `Referer` finding
+    * `--velocity`    - at least one `ClickVelocity` finding
 
   """
 
@@ -26,7 +27,8 @@ defmodule Mix.Tasks.Clickguard.Gen.Fixture do
           out: :string,
           freqip: :boolean,
           bad_ua: :boolean,
-          bad_referer: :boolean
+          bad_referer: :boolean,
+          velocity: :boolean
         ]
       )
 
