@@ -53,6 +53,25 @@ defmodule Clickguard.Event do
   def format_ip(nil), do: nil
   def format_ip(ip), do: ip |> :inet.ntoa() |> to_string()
 
+  @doc """
+  Returns the {ip, ua} key as a string.
+  Separator is `|` so that `IP` and `UA` never collide.
+
+  ## Examples
+
+    iex> alias Clickguard.Event
+    iex> e = %Event{timestamp: ~U[2016-06-24 13:26:08.003Z], ip: {8193, 3512, 34211, 0, 0, 35374, 880, 29492}, 
+    ...>   user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:151.0) Gecko/20100101 Firefox/151.0", 
+    ...>   referer: "https://google.com", method: "GET", path: "/", status: 200, bytes: 0, country: nil, source: nil, raw: ""}
+    iex> Event.session_key(e)
+    "2001:db8:85a3::8a2e:370:7334|Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:151.0) Gecko/20100101 Firefox/151.0"
+  """
+
+  @spec session_key(t()) :: String.t()
+  def session_key(%__MODULE__{} = event) do
+    "#{format_ip(event.ip)}|#{event.user_agent || ""}"
+  end
+
   @spec sample([%__MODULE__{}]) :: [%__MODULE__{}]
   def sample(events) when length(events) < 5, do: events
   def sample(events), do: Enum.take(events, 3) ++ Enum.take(events, -2)
