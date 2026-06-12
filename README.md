@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/mike-k-git/clickguard/actions/workflows/ci.yml/badge.svg)](https://github.com/mike-k-git/clickguard/actions/workflows/ci.yml)
 
-Clickguard surfaces bot traffic and click fraud signals in web and ad-server access logs. It reads Common Log Format (CLF) input, runs a set of detectors over the parsed events, and scores each actor by the rules they triggered. The result is a ranked list of suspect IPs with band assignments (clear / suspect / fraud) and rule breakdowns.
+Clickguard surfaces bot traffic and click fraud signals in web and ad-server access logs. It reads Common Log Format (CLF) input, runs a set of detectors over the parsed events, and scores each actor by the rules they triggered. The result is a ranked list of suspect IPs with band assignments (clear/suspect/fraud) and rule breakdowns.
 
-It is a portfolio project with a real fraud-mitigation domain. The scoring model is intentionally simple at this stage — the goal is behavioral signal surfacing, not a production-grade verdict engine.
+It is a portfolio project with a real fraud-mitigation domain. The scoring model is intentionally simple at this stage. The goal is behavioral signal surfacing, not a production-grade verdict engine.
 
 ## Build
 
@@ -33,9 +33,9 @@ cat access.log | ./clickguard
 
 ### Options
 
-`--format text|json` — output format. Defaults to `text`.
+`--format text|json` output format. Defaults to `text`.
 
-`--fail-on suspect|fraud` — exit with code 2 if any actor bands at or above the given level. `suspect` is triggered by suspect and fraud; `fraud` by fraud only. Without this flag the exit code reflects only whether the run succeeded.
+`--fail-on suspect|fraud` exit with code 2 if any actor bands at or above the given level. `suspect` is triggered by suspect and fraud; `fraud` by fraud only. Without this flag the exit code reflects only whether the run succeeded.
 
 ### Exit codes
 
@@ -54,14 +54,15 @@ Code 2 is separate from code 1 so a CI step can distinguish a clean log from a b
 Tab-separated table, sorted fraud → suspect → clear, then by score descending within band.
 
 ```
-actor           events  band    score   summary worst
-ip:127.0.0.1    303     fraud   4       low: 4  :high_frequency_ip (300)
-ip:10.0.0.10    4       suspect 2       low: 3  :automation_tool (2)
-ip:10.0.0.1     1       clear   1       low: 1  :automation_tool (1)
-ip:10.0.0.2     1       clear   1       low: 1  :automation_tool (1)
-ip:192.168.1.1  1       clear   1       low: 1  :spam_referer (1)
-ip:192.168.1.10 2       clear   1       low: 2  :spam_referer (1)
-ip:192.168.1.2  1       clear   1       low: 1  :spam_referer (1)
+actor                                     events  band    score   summary worst
+session:172.16.0.1|high-velocity-browser  20      fraud   16      high: 1 :click_velocity (20)
+ip:127.0.0.1                              303     fraud   4       low: 4  :high_frequency_ip (300)
+ip:10.0.0.10                              4       suspect 2       low: 3  :automation_tool (2)
+ip:10.0.0.1                               1       clear   1       low: 1  :automation_tool (1)
+ip:10.0.0.2                               1       clear   1       low: 1  :automation_tool (1)
+ip:192.168.1.1                            1       clear   1       low: 1  :spam_referer (1)
+ip:192.168.1.10                           2       clear   1       low: 2  :spam_referer (1)
+ip:192.168.1.2                            1       clear   1       low: 1  :spam_referer (1)
 ```
 
 ### JSON
@@ -106,13 +107,15 @@ ip:192.168.1.2  1       clear   1       low: 1  :spam_referer (1)
 
 ## Detectors
 
-Each detector is an independent stage. Findings are per `{IP, rule}` pair. One actor triggering the same rule N times produces one finding, not N.
+Each detector is an independent stage. Findings are per `{actor, rule}` pair. One actor triggering the same rule N times produces one finding, not N.
 
 **FreqIp** flags IPs exceeding 300 requests per 60-second sliding window. Returns the first offending window, not the peak.
 
 **UserAgent** flags requests from known automation tools (`python-requests`, `curl`, `wget`, `go-http-client`, `scrapy`) and headless browsers (`HeadlessChrome`, `PhantomJS`), and nil/blank UAs. Catches lazy bots only. Real-UA spoofing is out of scope.
 
 **Referer** flags nil/blank referers and requests from known referer-spam domains. Host matching is exact (normalized: lowercase, `www.` stripped). The spam domain list is configurable.
+
+**ClickVelocity** flags `{ip, ua}` pairs whose click cadence is robotic. Events are grouped into sessions split on a 30-minute idle gap. A session of 5+ clicks fires on its median inter-click interval: <=2s is `:medium`, <=1s is `:high`; or on 5+ clicks inside one second (`:high`). It is the first detector to emit severities above `:low`. All thresholds are configurable.
 
 ## Scoring
 
