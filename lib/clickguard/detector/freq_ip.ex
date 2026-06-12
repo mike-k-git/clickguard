@@ -42,7 +42,7 @@ defmodule Clickguard.Detector.FreqIp do
   defp offending_window(events, threshold, window_ms) do
     result =
       events
-      |> Enum.sort_by(& &1.timestamp)
+      |> Enum.sort_by(& &1.timestamp, DateTime)
       |> Enum.reduce_while({:queue.new(), 0}, fn event, {window, count} ->
         cutoff = DateTime.add(event.timestamp, -window_ms, :millisecond)
         {pruned, pruned_count} = prune(&DateTime.before?(&1.timestamp, cutoff), window, count)
