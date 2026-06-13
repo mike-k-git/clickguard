@@ -121,4 +121,13 @@ defmodule Clickguard.CLITest do
         Clickguard.CLI.run(args)
     end
   end
+
+  describe "CLI.run2" do
+    test "with stream input matches run/1 with file path" do
+      stream = File.stream!(@fraud)
+      {:ok, scores_file} = Clickguard.run(@fraud)
+      {:ok, scores_stream} = Clickguard.run(stream)
+      assert Enum.sort(scores_file) == Enum.sort(scores_stream)
+    end
+  end
 end
