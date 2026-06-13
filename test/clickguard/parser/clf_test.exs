@@ -99,5 +99,11 @@ defmodule Clickguard.Parser.CLFTest do
       line = ~s(127.0.0.1 - - [22/May/2026:10:00:00 +0000] "GET / HTTP/1.1" 2XX 1)
       assert {:error, _} = CLF.parse(line)
     end
+
+    test "rejects nil-IP" do
+      nil_ip_line = ~s(0.0.0.0.0 - - [22/May/2026:10:00:00 +0000] "GET / HTTP/1.1" 200 1)
+
+      assert {:error, {:bad_field, :ip}} = CLF.parse(nil_ip_line)
+    end
   end
 end

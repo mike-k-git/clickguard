@@ -8,7 +8,7 @@ defmodule Clickguard.Event do
 
   @type t :: %__MODULE__{
           timestamp: DateTime.t(),
-          ip: :inet.ip_address() | nil,
+          ip: :inet.ip_address(),
           user_agent: String.t() | nil,
           referer: String.t() | nil,
           method: String.t(),
@@ -36,7 +36,7 @@ defmodule Clickguard.Event do
   ]
 
   @doc """
-  Returns the IP as a string, or `nil` if the event has no IP.
+  Returns the IP as a string.
 
   ## Examples
 
@@ -46,11 +46,10 @@ defmodule Clickguard.Event do
     iex> Event.ip_string(e)
     "127.0.0.1"
   """
-  @spec ip_string(t()) :: String.t() | nil
+  @spec ip_string(t()) :: String.t()
   def ip_string(%__MODULE__{ip: ip}), do: format_ip(ip)
 
-  @spec format_ip(:inet.ip_address() | nil) :: String.t() | nil
-  def format_ip(nil), do: nil
+  @spec format_ip(:inet.ip_address()) :: String.t()
   def format_ip(ip), do: ip |> :inet.ntoa() |> to_string()
 
   @doc """
