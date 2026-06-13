@@ -7,7 +7,7 @@ defmodule Clickguard.Reporter.Text do
   alias Clickguard.Reporter
   @behaviour Clickguard.Reporter
 
-  @severity_rank %{high: 0, medium: 1, low: 2}
+  @severity_rank %{high: 0, medium: 1, low: 2, info: 3}
 
   @impl true
   def format(scores) do

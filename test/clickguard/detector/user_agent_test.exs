@@ -55,7 +55,7 @@ defmodule Clickguard.Detector.UserAgentTest do
       assert f.actor_type == :ip
       assert f.evidence.event_count == 1
       assert f.evidence.matched_uas == []
-      assert f.severity == :low
+      assert f.severity == :info
     end
 
     test "event with whitespace-only user-agent produces one finding" do

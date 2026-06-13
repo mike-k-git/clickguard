@@ -3,7 +3,8 @@ defmodule Clickguard.Detector.UserAgent do
   Flags requests by automated/headless user agents, keyed by IP.
 
   Rules (Subject = IP):
-    * :empty_ua - UA nil/blank
+    * :empty_ua - UA nil/blank, weak signal
+      Has :info severity since intensity scoring introduction.
     * :automation_tool - python-requests, curl, wget, Go-http-client, Scrapy
     * :headless_browser - HeadlessChrome, PhantomJS
     
@@ -56,9 +57,11 @@ defmodule Clickguard.Detector.UserAgent do
   defp contains_any?(ua, tokens), do: Enum.any?(tokens, &String.contains?(ua, &1))
 
   defp build_finding(rule, ip, events, detected_at) do
+    severity = if rule == :empty_ua, do: :info, else: :low
+
     %Finding{
       rule: rule,
-      severity: :low,
+      severity: severity,
       subject: ip,
       actor_type: :ip,
       evidence: build_evidence(events),
