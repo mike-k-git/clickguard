@@ -54,18 +54,18 @@ Code 2 is separate from code 1 so a CI step can distinguish a clean log from a b
 Tab-separated table, sorted fraud → suspect → clear, then by score descending within band.
 
 ```
-actor                                       events  band    score   summary     worst
-session:172.16.0.1|high-velocity-browser    25      fraud   32      high: 1     :click_velocity (25)
-session:172.16.0.4|burst-then-idle-browser  32      fraud   16      high: 1     :click_velocity (6)
-session:172.16.0.3|medium-cadence-browser   25      fraud   6       medium: 1   :click_velocity (25)
-session:172.16.0.2|medium-cadence-browser   8       suspect 3       medium: 1   :click_velocity (8)
-ip:127.0.0.1                                303     suspect 5       low: 4      :high_frequency_ip (300)
-ip:10.0.0.10                                4       suspect 2       low: 3      :automation_tool (2)
-ip:10.0.0.1                                 1       clear   1       low: 1      :automation_tool (1)
-ip:10.0.0.2                                 1       clear   1       low: 1      :automation_tool (1)
-ip:192.168.1.1                              1       clear   1       low: 1      :spam_referer (1)
-ip:192.168.1.10                             2       clear   1       low: 2      :spam_referer (1)
-ip:192.168.1.2                              1       clear   1       low: 1      :spam_referer (1)
+actor                                       events  band    score   summary           worst
+session:172.16.0.1|high-velocity-browser    25      fraud   32      high: 1           :click_velocity (25)
+session:172.16.0.4|burst-then-idle-browser  32      fraud   16      high: 1           :click_velocity (6)
+session:172.16.0.3|medium-cadence-browser   25      fraud   6       medium: 1         :click_velocity (25)
+ip:127.0.0.1                                303     suspect 5       low: 4            :high_frequency_ip (300)
+session:172.16.0.2|medium-cadence-browser   8       suspect 3       medium: 1         :click_velocity (8)
+ip:10.0.0.10                                4       suspect 2       low: 2, info: 1   :automation_tool (2)
+ip:10.0.0.1                                 1       clear   1       low: 1            :automation_tool (1)
+ip:10.0.0.2                                 1       clear   1       low: 1            :automation_tool (1)
+ip:192.168.1.1                              1       clear   1       low: 1            :spam_referer (1)
+ip:192.168.1.10                             2       clear   1       low: 1, info: 1   :spam_referer (1)
+ip:192.168.1.2                              1       clear   1       low: 1            :spam_referer (1)
 ```
 
 ### JSON
@@ -124,7 +124,7 @@ Each detector is an independent stage. Findings are per `{actor, rule}` pair. On
 
 The scorer aggregates findings per actor and assigns a band.
 
-Rule weights: low = 1, medium = 3, high = 16. Hygiene-only rules (`:empty_ua`, `:empty_referer`) carry weight 0 and do not affect banding on their own.
+Rule weights: info = 0 (hygiene-only rules), low = 1, medium = 3, high = 16.
 
 Bands are assigned on rule diversity, not event volume: one medium rule → suspect; medium + any low → fraud; any high → fraud.
 

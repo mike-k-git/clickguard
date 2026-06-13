@@ -45,7 +45,7 @@ defmodule Clickguard.Detector.RefererTest do
       event = EB.event({127, 0, 0, 1}, @base_ts, referer: nil)
       assert [f] = Referer.detect([event], [])
       assert f.rule == :empty_referer
-      assert f.severity == :low
+      assert f.severity == :info
       assert f.subject == "127.0.0.1"
       assert f.actor_type == :ip
       assert f.evidence.event_count == 1

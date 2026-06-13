@@ -5,7 +5,7 @@ defmodule Clickguard.Finding do
   All detectors produce a list of `%Finding{}` values; scorer consumes them.
   """
   alias Clickguard.Event
-  @type severity :: :low | :medium | :high
+  @type severity :: :info | :low | :medium | :high
 
   @type t :: %__MODULE__{
           rule: atom(),

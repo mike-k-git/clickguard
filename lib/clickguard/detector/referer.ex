@@ -5,6 +5,7 @@ defmodule Clickguard.Detector.Referer do
   Rules (Subject = IP):
     * :empty_referer - referer is nil/blank. Weak signal (privacy browsers,
       Referrer-Policy, HTTPS->HTTP downgrade all strip it legitimately).
+      Has :info severity since intensity scoring introduction.
     * :spam_referer  - referer host matches a known referer-spam domain.
 
   Subject is uniformly the IP (symmetric with UserAgent). The domain-level
@@ -64,9 +65,11 @@ defmodule Clickguard.Detector.Referer do
   defp build_finding(rule, ip, pairs, detected_at) do
     events = Enum.map(pairs, fn {e, _} -> e end)
 
+    severity = if rule == :empty_referer, do: :info, else: :low
+
     %Finding{
       rule: rule,
-      severity: :low,
+      severity: severity,
       subject: ip,
       actor_type: :ip,
       evidence: build_evidence(pairs),

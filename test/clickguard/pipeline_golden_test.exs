@@ -55,7 +55,7 @@ defmodule Clickguard.PipelineGoldenTest do
       band: :suspect,
       rule_summary: %{
         automation_tool: {:low, 2},
-        empty_ua: {:low, 1},
+        empty_ua: {:info, 1},
         headless_browser: {:low, 1}
       },
       score: 2,
@@ -94,7 +94,7 @@ defmodule Clickguard.PipelineGoldenTest do
     %Score{
       actor: {:ip, "192.168.1.10"},
       band: :clear,
-      rule_summary: %{empty_referer: {:low, 1}, spam_referer: {:low, 1}},
+      rule_summary: %{empty_referer: {:info, 1}, spam_referer: {:low, 1}},
       score: 1,
       total_events: 2,
       total_findings: 2

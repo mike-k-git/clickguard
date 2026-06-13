@@ -61,8 +61,8 @@ defmodule Clickguard.Scorer do
 
   defp score_actor(summary, total) do
     score =
-      Enum.reduce(summary, 0, fn {rule, {severity, count}}, acc ->
-        acc + effective_weight(weight(rule, severity), count, total)
+      Enum.reduce(summary, 0, fn {_rule, {severity, count}}, acc ->
+        acc + effective_weight(weight(severity), count, total)
       end)
 
     {cap(to_band(score), summary), score}
@@ -76,10 +76,10 @@ defmodule Clickguard.Scorer do
 
   defp effective_weight(base, _count, _total), do: base
 
-  defp weight(rule, _severity) when rule in [:empty_ua, :empty_referer], do: 0
-  defp weight(_rule, :low), do: 1
-  defp weight(_rule, :medium), do: 3
-  defp weight(_rule, :high), do: 16
+  defp weight(:info), do: 0
+  defp weight(:low), do: 1
+  defp weight(:medium), do: 3
+  defp weight(:high), do: 16
 
   defp to_band(score) when score <= 1, do: :clear
   defp to_band(score) when score <= 3, do: :suspect

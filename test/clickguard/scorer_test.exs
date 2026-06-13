@@ -184,7 +184,7 @@ defmodule Clickguard.ScorerTest do
       assert [score] = Scorer.score(findings, Clickguard.actor_totals(events))
       assert score.actor == {:ip, "127.0.0.1"}
       assert score.band == :clear
-      assert score.rule_summary == %{empty_referer: {:low, 10}}
+      assert score.rule_summary == %{empty_referer: {:info, 10}}
       assert score.score == 0
       assert score.total_events == 10
       assert score.total_findings == 1
@@ -197,7 +197,7 @@ defmodule Clickguard.ScorerTest do
       assert [score] = Scorer.score(findings, Clickguard.actor_totals(events))
       assert score.actor == {:ip, "127.0.0.1"}
       assert score.band == :clear
-      assert score.rule_summary == %{empty_ua: {:low, 10}}
+      assert score.rule_summary == %{empty_ua: {:info, 10}}
       assert score.score == 0
       assert score.total_events == 10
       assert score.total_findings == 1
@@ -216,7 +216,7 @@ defmodule Clickguard.ScorerTest do
       assert [score] = Scorer.score(findings, Clickguard.actor_totals(events))
       assert score.actor == {:ip, "127.0.0.1"}
       assert score.band == :clear
-      assert score.rule_summary == %{empty_ua: {:low, 10}, empty_referer: {:low, 10}}
+      assert score.rule_summary == %{empty_ua: {:info, 10}, empty_referer: {:info, 10}}
       assert score.score == 0
       assert score.total_events == 20
       assert score.total_findings == 2
@@ -235,7 +235,7 @@ defmodule Clickguard.ScorerTest do
       assert [score] = Scorer.score(findings, Clickguard.actor_totals(events))
       assert score.actor == {:ip, "127.0.0.1"}
       assert score.band == :clear
-      assert score.rule_summary == %{empty_ua: {:low, 500}, high_frequency_ip: {:low, 300}}
+      assert score.rule_summary == %{empty_ua: {:info, 500}, high_frequency_ip: {:low, 300}}
       assert score.score == 1
       assert score.total_events == 900
       assert score.total_findings == 2
