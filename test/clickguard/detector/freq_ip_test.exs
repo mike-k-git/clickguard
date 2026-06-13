@@ -102,4 +102,16 @@ defmodule Clickguard.Detector.FreqIpTest do
       assert [_] = FreqIp.detect(events, [])
     end
   end
+
+  describe "detect/2 - peak rate in evidence" do
+    test "produced by the biggest window, not always the first" do
+      first = EB.burst({127, 0, 0, 1}, @base_ts, 300, 10)
+
+      biggest = EB.burst({127, 0, 0, 1}, DateTime.add(@base_ts, 1, :hour), 600, 10)
+
+      assert [finding] = FreqIp.detect(first ++ biggest, [])
+      assert finding.evidence.event_count == 300
+      assert finding.evidence.peak_count == 600
+    end
+  end
 end
