@@ -19,16 +19,25 @@ defmodule Clickguard do
   def parse(input, opts \\ []) do
     parser = Keyword.get(opts, :parser, Parser.CLF)
 
-    events =
+    {events, total, rejected} =
       input
       |> Stream.map(&String.trim_trailing/1)
       |> Stream.reject(&(&1 == ""))
-      |> Stream.map(&parser.parse/1)
-      |> Stream.filter(&match?({:ok, _}, &1))
-      |> Stream.map(fn {:ok, event} -> event end)
-      |> Enum.to_list()
+      |> Enum.reduce({[], 0, 0}, fn line, {evs, tot, rej} ->
+        case parser.parse(line) do
+          {:ok, event} -> {[event | evs], tot + 1, rej}
+          {:error, _} -> {evs, tot + 1, rej + 1}
+        end
+      end)
 
-    {:ok, events}
+    if rejected > 0,
+      do:
+        IO.puts(
+          :stderr,
+          "clickguard: parsed #{total - rejected}/#{total} lines (#{rejected} rejected)"
+        )
+
+    {:ok, Enum.reverse(events)}
   end
 
   @doc """

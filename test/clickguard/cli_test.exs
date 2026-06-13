@@ -1,9 +1,12 @@
 defmodule Clickguard.CLITest do
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureIO
+
   @clean ~s(test/fixtures/clear.log)
   @suspect ~s(test/fixtures/suspect.log)
   @fraud ~s(test/fixtures/fraud.log)
+  @malformed ~s(test/fixtures/malformed.log)
 
   describe "CLI.run/1 - formats" do
     test "text output is correct" do
@@ -58,6 +61,13 @@ defmodule Clickguard.CLITest do
       parsed_data = output |> IO.iodata_to_binary() |> JSON.decode!()
       assert is_list(parsed_data)
       assert parsed_data == []
+    end
+
+    test "log with malformed lines produces message on stderr" do
+      args = [@malformed]
+
+      assert capture_io(:stderr, fn -> Clickguard.CLI.run(args) end) ==
+               "clickguard: parsed 498/500 lines (2 rejected)\n"
     end
   end
 

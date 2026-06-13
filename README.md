@@ -108,6 +108,14 @@ ip:192.168.1.2                              1       clear   1       low: 1      
 ]
 ```
 
+### Malformed lines
+
+If there are malformed lines, clickguard prints a warning to stderr. Empty lines are skipped completely.
+
+```bash
+clickguard: parsed N/M lines (K rejected)
+```
+
 ## Detectors
 
 Each detector is an independent stage. Findings are per `{actor, rule}` pair. One actor triggering the same rule N times produces one finding, not N.
