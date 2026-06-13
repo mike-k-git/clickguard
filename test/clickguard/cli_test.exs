@@ -1,7 +1,7 @@
 defmodule Clickguard.CLITest do
   use ExUnit.Case, async: true
 
-  @clean ~s(test/fixtures/clean.log)
+  @clean ~s(test/fixtures/clear.log)
   @suspect ~s(test/fixtures/suspect.log)
   @fraud ~s(test/fixtures/fraud.log)
 
