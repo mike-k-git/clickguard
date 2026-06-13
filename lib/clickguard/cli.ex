@@ -47,7 +47,12 @@ defmodule Clickguard.CLI do
     with {:ok, input, reporter, fail_bands} <- parse_args(args, stdin),
          {:ok, scores} <- Clickguard.run(input) do
       output = reporter.format(scores)
-      exit_code = if Enum.any?(scores, &Enum.member?(fail_bands, &1.band)), do: 2, else: 0
+
+      exit_code =
+        if Enum.any?(scores, &Enum.member?(fail_bands, &1.band)),
+          do: @fail_bands_code,
+          else: @success_code
+
       {:ok, output, exit_code}
     end
   end
