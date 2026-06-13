@@ -49,6 +49,8 @@ defmodule Clickguard.Fixtures do
     bad_ua = Keyword.get(opts, :bad_ua, false)
     bad_referer = Keyword.get(opts, :bad_referer, false)
     velocity = Keyword.get(opts, :velocity, false)
+    velocity_medium = Keyword.get(opts, :velocity_medium, false)
+    velocity_mixed = Keyword.get(opts, :velocity_mixed, false)
 
     :rand.seed(:exsss, 4711)
 
@@ -57,9 +59,14 @@ defmodule Clickguard.Fixtures do
     bad_ua_lines = if bad_ua, do: generate_bad_ua_lines(), else: []
     bad_referer_lines = if bad_referer, do: generate_bad_referer_lines(), else: []
     velocity_lines = if velocity, do: generate_velocity_lines(), else: []
+    velocity_medium_lines = if velocity_medium, do: generate_medium_velocity_lines(), else: []
+    velocity_mixed_lines = if velocity_mixed, do: generate_mixed_velocity_lines(), else: []
 
     output =
-      (freqip_lines ++ good_lines ++ bad_ua_lines ++ bad_referer_lines ++ velocity_lines)
+      (freqip_lines ++
+         good_lines ++
+         bad_ua_lines ++
+         bad_referer_lines ++ velocity_lines ++ velocity_medium_lines ++ velocity_mixed_lines)
       |> Enum.shuffle()
       |> Enum.join("\n")
 
@@ -68,7 +75,7 @@ defmodule Clickguard.Fixtures do
 
     total =
       length(good_lines) + length(freqip_lines) + length(bad_ua_lines) + length(bad_referer_lines) +
-        length(velocity_lines)
+        length(velocity_lines) + length(velocity_medium_lines) + length(velocity_mixed_lines)
 
     {total, out}
   end
@@ -90,8 +97,44 @@ defmodule Clickguard.Fixtures do
     end)
   end
 
+  # 2s cadence: deltas 2000ms -> median 2000 (<= meduim_median, > high_median)
+  # one click per second -> max_burst 1 < 5 -> :medium
+  defp generate_medium_velocity_lines do
+    cadence_lines("172.16.0.2", 8) ++ cadence_lines("172.16.0.3", 25)
+  end
+
+  defp cadence_lines(ip, n) do
+    for i <- 1..n do
+      clf_line(
+        ip: ip,
+        ts: DateTime.add(@base_ts, i * 2, :second) |> Calendar.strftime(@ts_format),
+        user_agent: "medium-cadence-browser"
+      )
+    end
+  end
+
+  # 6-click same-second burst (median 0 -> :high) + 26 singles spaced 31 min apart:
+  # each single is > session_gap_ms from its neighbour -> session of 1
+  # -> filtered by min_session_clicks. event_count 6, pair total 32, ratio 0.19 < floor.
+  defp generate_mixed_velocity_lines do
+    burst =
+      for _ <- 1..6,
+          do: clf_line(ip: "172.16.0.4", ts: ts(0), user_agent: "burst-then-idle-browser")
+
+    idle =
+      for i <- 1..26 do
+        clf_line(
+          ip: "172.16.0.4",
+          ts: DateTime.add(@base_ts, i * 31 * 60, :second) |> Calendar.strftime(@ts_format),
+          user_agent: "burst-then-idle-browser"
+        )
+      end
+
+    burst ++ idle
+  end
+
   defp generate_velocity_lines do
-    for n <- 1..20,
+    for n <- 1..25,
         do:
           clf_line(
             ip: "172.16.0.1",

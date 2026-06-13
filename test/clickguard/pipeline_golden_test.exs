@@ -10,12 +10,36 @@ defmodule Clickguard.PipelineGoldenTest do
   alias Clickguard.Score
 
   @expected [
-    %Clickguard.Score{
+    %Score{
       actor: {:session, "172.16.0.1|high-velocity-browser"},
       band: :fraud,
-      rule_summary: %{click_velocity: {:high, 20}},
+      rule_summary: %{click_velocity: {:high, 25}},
+      score: 32,
+      total_events: 25,
+      total_findings: 1
+    },
+    %Score{
+      actor: {:session, "172.16.0.2|medium-cadence-browser"},
+      band: :suspect,
+      rule_summary: %{click_velocity: {:medium, 8}},
+      score: 3,
+      total_events: 8,
+      total_findings: 1
+    },
+    %Score{
+      actor: {:session, "172.16.0.3|medium-cadence-browser"},
+      band: :fraud,
+      rule_summary: %{click_velocity: {:medium, 25}},
+      score: 6,
+      total_events: 25,
+      total_findings: 1
+    },
+    %Score{
+      actor: {:session, "172.16.0.4|burst-then-idle-browser"},
+      band: :fraud,
+      rule_summary: %{click_velocity: {:high, 6}},
       score: 16,
-      total_events: 20,
+      total_events: 32,
       total_findings: 1
     },
     %Score{
@@ -48,14 +72,14 @@ defmodule Clickguard.PipelineGoldenTest do
     },
     %Score{
       actor: {:ip, "127.0.0.1"},
-      band: :fraud,
+      band: :suspect,
       rule_summary: %{
         automation_tool: {:low, 1},
         headless_browser: {:low, 1},
         high_frequency_ip: {:low, 300},
         spam_referer: {:low, 1}
       },
-      score: 4,
+      score: 5,
       total_events: 303,
       total_findings: 4
     },
@@ -95,7 +119,9 @@ defmodule Clickguard.PipelineGoldenTest do
         freqip: true,
         bad_ua: true,
         bad_referer: true,
-        velocity: true
+        velocity: true,
+        velocity_medium: true,
+        velocity_mixed: true
       )
 
     on_exit(fn -> File.rm(path) end)
@@ -131,7 +157,7 @@ defmodule Clickguard.PipelineGoldenTest do
     high_velocity = find.(:click_velocity, "172.16.0.1|high-velocity-browser")
     assert high_velocity.severity == :high
     assert high_velocity.actor_type == :session
-    assert high_velocity.evidence.event_count == 20
+    assert high_velocity.evidence.event_count == 25
     assert high_velocity.evidence.max_burst == 1
     assert high_velocity.evidence.median_delta_ms == 1000.0
   end
