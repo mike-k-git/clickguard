@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/mike-k-git/clickguard/actions/workflows/ci.yml/badge.svg)](https://github.com/mike-k-git/clickguard/actions/workflows/ci.yml)
 
-Clickguard surfaces bot traffic and click fraud signals in web and ad-server access logs. It reads Common Log Format (CLF) input, runs a set of detectors over the parsed events, and scores each actor by the rules they triggered. The result is a ranked list of suspect IPs with band assignments (clear/suspect/fraud) and rule breakdowns.
+Clickguard surfaces bot traffic and click fraud signals in web access logs. It reads Common Log Format (CLF) input, runs a set of detectors over the parsed events, and scores each actor (IP or session) by the rules they triggered. The result is a ranked list with band assignments (clear/suspect/fraud) and rule breakdowns.
 
 It is a portfolio project with a real fraud-mitigation domain. The scoring model is intentionally simple at this stage. The goal is behavioral signal surfacing, not a production-grade verdict engine.
 
@@ -78,29 +78,17 @@ ip:192.168.1.2                              1       clear   1       low: 1      
 [
   {
     "band": "fraud",
-    "score": 4,
+    "score": 16,
     "actor": {
-      "type": "ip",
-      "value": "127.0.0.1"
+      "type": "session",
+      "value": "172.16.0.4|burst-then-idle-browser"
     },
-    "total_events": 303,
-    "total_findings": 4,
+    "total_events": 32,
+    "total_findings": 1,
     "rules": {
-      "headless_browser": {
-        "event_count": 1,
-        "severity": "low"
-      },
-      "automation_tool": {
-        "event_count": 1,
-        "severity": "low"
-      },
-      "high_frequency_ip": {
-        "event_count": 300,
-        "severity": "low"
-      },
-      "spam_referer": {
-        "event_count": 1,
-        "severity": "low"
+      "click_velocity": {
+        "event_count": 6,
+        "severity": "high"
       }
     }
   },
@@ -120,13 +108,13 @@ clickguard: parsed N/M lines (K rejected)
 
 Each detector is an independent stage. Findings are per `{actor, rule}` pair. One actor triggering the same rule N times produces one finding, not N.
 
-**FreqIp** flags IPs exceeding 300 requests per 60-second sliding window. Returns the first offending window, not the peak.
+**FreqIp** flags IPs exceeding 300 requests per 60-second sliding window. Returns the first offending window, not the peak. The peak window is recorded in evidence.
 
 **UserAgent** flags requests from known automation tools (`python-requests`, `curl`, `wget`, `go-http-client`, `scrapy`) and headless browsers (`HeadlessChrome`, `PhantomJS`), and nil/blank UAs. Catches lazy bots only. Real-UA spoofing is out of scope.
 
 **Referer** flags nil/blank referers and requests from known referer-spam domains. Host matching is exact (normalized: lowercase, `www.` stripped). The spam domain list is configurable.
 
-**ClickVelocity** flags `{ip, ua}` pairs whose click cadence is robotic. Events are grouped into sessions split on a 30-minute idle gap. A session of 5+ clicks fires on its median inter-click interval: <=2s is `:medium`, <=1s is `:high`; or on 5+ clicks inside one second (`:high`). It is the first detector to emit severities above `:low`. All thresholds are configurable.
+**ClickVelocity** flags `{ip, ua}` pairs whose click cadence is robotic. Events are grouped into sessions split on a 30-minute idle gap. A session of 5+ clicks fires on its median inter-click interval: <=2s is `:medium`, <=1s is `:high`; or on 5+ clicks inside one second (`:high`). It is the first detector to emit severities above `:low`. Calibrated for click-granular logs; threshold recalibration needed on raw access logs serving mixed content.
 
 ## Scoring
 
@@ -146,6 +134,32 @@ An actor whose findings are all `:low` severity does not exceed `:suspect` level
 Fraud requires at least one `:medium` or `:high` finding (behavioral evidence, not just
 accumulated hygiene markers).
 
-## Architecture
+### Band Table
 
-The pipeline is `parse → detect → score`. Detectors run concurrently via `Task.async_stream`. The scorer joins findings per actor and produces one `Score` per actor. Reporters (`Text`, `JSON`) are implementations of the `Reporter` behaviour and consume the score list.
+| Band | Score | Notes |
+|------|---------|-----|
+| clear | <= 1 | - |
+| suspect | <= 3 | - |
+| fraud | > 3 | needs at least one :medium or :high finding |
+
+## Roadmap
+
+**v0.3 – streaming pipeline.** The current architecture materialises the full event list before detection. The next logical step is a Flow/GenStage refactor: a true streaming pipeline where events flow through partitioned stages. The scorer (stateful reduce) and ClickVelocity (stateful session stage) already define the partition shape.
+
+**v0.4 – ad-log parser.** CLF can identify robotic traffic, but not click fraud, as this is an economic event and requires source, campaign, conversion, and cost data. A pluggable ad-log parser would enrich `Event` with these fields and activate a dormant detector family: conversion outlier detection, geographic concentration, and source-keyed scoring. This is the step that earns the "ad fraud" framing.
+
+**Detector improvements.** UA-rotation detection (many distinct UAs from one IP are a real indicator of datacenter proxy bots, but needs volume-relative counting to avoid false positives on NAT egress). Crawler-spoof detection (claims crawler UA but IP not in a verified range). Publisher-referer mismatch. All are blocked on config or enrichment that v0.4 introduces.
+
+## How it works
+
+The architecture treats the scorer as the product. Detectors are independent feature extractors, each one producing findings rather than a final verdict. The scorer module aggregates these findings for each actor, applies weights, and produces the final band. This functional division is intentional: any single rule is only a weak indicator, while the actual judgment is made by the scorer. Consequently, adding a detector does not change the scorer; new detectors simply widen the evidence pool without affecting the weighting logic.
+
+The findings are associated with actors, where an actor is an `{actor_type, subject}` pair. Version 0.2 defines two types. The `:ip` type carries per-IP findings from FreqIp, UserAgent, and Referer, while the `:session` type covers `{ip, ua}` pairs identified by ClickVelocity. The event denominator belongs to `actor_totals/1` alone. Introducing a third actor type only requires this single function to be extended, rather than sweeping changes to be made across the entire system.
+
+The evidence contract ensures that the layers remain clean. Each finding carries a detector-typed `evidence` map rich enough that the scorer never has to re-read the event stream. If the scorer does require access to the raw events, this indicates a violation of the abstraction principle and signals that the system requires refinement.
+
+When it comes to concurrency, it's important to be precise about what is actually happening. Detectors run concurrently via `Task.async_stream` over a materialised event list, which is a form of concurrent batch dispatch rather than a true streaming pipeline. A streaming refactor using Flow/GenStage is planned for a future version.
+
+All of this is based on one input assumption. Both FreqIp and ClickVelocity are calibrated for click-granular logs. If you point them at raw server logs full of mixed asset requests, the thresholds will no longer hold. The v0.4 ad-log parser addresses this issue directly by filtering by request type, so only the relevant events reach the appropriate detectors.
+
+Taken together, the design centralizes all interpretation and maintains everything upstream as dumb, composable extraction. Detectors observe and report, and the scorer decides. This separation is the key concept, and most of the roadmap is about extending the inputs without disturbing it.
